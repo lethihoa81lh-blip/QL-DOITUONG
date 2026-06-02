@@ -34,6 +34,8 @@ th { background: #f2f2f2; }
     max-height: 420px;
     overflow-y: auto;
 }
+
+th:nth-child(1), td:nth-child(1) { width: 180px; text-align: left; }
 </style>
 </head>
 
@@ -57,26 +59,31 @@ th { background: #f2f2f2; }
 
 <button id="btnAdd" onclick="them()" disabled>Thêm</button>
 <button id="btnEdit" onclick="capNhat()" disabled>Cập nhật</button>
-
 <button onclick="xuatExcel()">Xuất Excel</button>
-<button onclick="xuatExcelBHYT()">Excel BHYT</button>
+
+<button onclick="locBHYT()">Chỉ có BHYT</button>
+<button onclick="locChuaBHYT()">Chưa có BHYT</button>
+<button onclick="hienTatCa()">Hiện tất cả</button>
+<button onclick="xuatExcelBHYT()">Xuất Excel BHYT</button>
 
 <h3>
 Tổng: <span id="tongBN">0</span> | 
 Có BHYT: <span id="coBHYT">0</span> | 
-Chưa BHYT: <span id="chuaBHYT">0</span>
+Chưa có BHYT: <span id="chuaBHYT">0</span>
 </h3>
+
+<h4 id="tongCD"></h4>
 
 <div class="container">
 <table>
 <thead>
 <tr>
-<th>Họ tên</th>
-<th>Năm sinh</th>
-<th>Nhà</th>
-<th>Chẩn đoán</th>
-<th>Thuốc</th>
-<th>BHYT</th>
+<th>Họ tên<br><input id="f_ten" onkeyup="locCot()"></th>
+<th>Năm sinh<br><input id="f_namsinh" onkeyup="locCot()"></th>
+<th>Nhà<br><input id="f_nha" onkeyup="locCot()"></th>
+<th>Chẩn đoán<br><input id="f_cd" onkeyup="locCot()"></th>
+<th>Thuốc<br><input id="f_thuoc" onkeyup="locCot()"></th>
+<th>BHYT<br><input id="f_bhyt" onkeyup="locCot()"></th>
 <th>Hành động</th>
 </tr>
 </thead>
@@ -90,15 +97,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ===== FIREBASE CONFIG (PHẢI ĐÚNG 100%) ===== */
 const firebaseConfig = {
-  apiKey: "AIzaSyDaWhoXqZGx-DLbwJYFghlL2FyiJrLjOA",
+  apiKey: "AIzaSy...",
   authDomain: "ql-benhnhan.firebaseapp.com",
   projectId: "ql-benhnhan",
-  storageBucket: "ql-benhnhan.firebasestorage.app",
-  messagingSenderId: "205264705273",
-  appId: "1:205264705273:web:071eef6ee888a9a6907428",
-  measurementId: "G-C7BF0H43VF"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -108,21 +110,15 @@ let ds = [];
 let idSua = null;
 let isAdmin = false;
 
-/* ===== LOAD DATA ===== */
+// LOAD
 async function loadData() {
-    try {
-        const snap = await getDocs(collection(db, "benhnhan"));
-        ds = [];
-        snap.forEach(d => ds.push({ id: d.id, ...d.data() }));
-        hienThi(ds);
-        console.log("LOAD OK:", ds.length);
-    } catch (e) {
-        console.error("LOAD ERROR:", e);
-        alert("Lỗi tải dữ liệu Firebase");
-    }
+    const snap = await getDocs(collection(db, "benhnhan"));
+    ds = [];
+    snap.forEach(d => ds.push({ id: d.id, ...d.data() }));
+    hienThi(ds);
 }
 
-/* ===== LẤY DATA FORM ===== */
+// DATA
 function layData() {
     return {
         ten: ten.value,
@@ -134,39 +130,32 @@ function layData() {
     };
 }
 
-/* ===== LOGIN ADMIN ===== */
+// LOGIN
 window.loginAdmin = function () {
     if (adminPass.value === "571810") {
         isAdmin = true;
         btnAdd.disabled = false;
         btnEdit.disabled = false;
-        alert("Đăng nhập admin thành công");
-    } else {
-        alert("Sai mật khẩu");
-    }
+        alert("Đã vào admin");
+    } else alert("Sai mật khẩu");
 };
 
-/* ===== THÊM ===== */
+// ADD
 window.them = async function () {
     if (!isAdmin) return alert("Không có quyền!");
-    try {
-        await addDoc(collection(db, "benhnhan"), layData());
-        clearForm();
-        loadData();
-    } catch (e) {
-        console.error(e);
-        alert("Lỗi thêm dữ liệu");
-    }
+    await addDoc(collection(db, "benhnhan"), layData());
+    clearForm();
+    loadData();
 };
 
-/* ===== XOÁ ===== */
+// DELETE
 window.xoa = async function (id) {
     if (!isAdmin) return alert("Không có quyền!");
     await deleteDoc(doc(db, "benhnhan", id));
     loadData();
 };
 
-/* ===== SỬA ===== */
+// EDIT
 window.sua = function (id) {
     let p = ds.find(x => x.id == id);
     ten.value = p.ten;
@@ -178,7 +167,7 @@ window.sua = function (id) {
     idSua = id;
 };
 
-/* ===== CẬP NHẬT ===== */
+// UPDATE
 window.capNhat = async function () {
     if (!isAdmin) return alert("Không có quyền!");
     await updateDoc(doc(db, "benhnhan", idSua), layData());
@@ -187,7 +176,46 @@ window.capNhat = async function () {
     loadData();
 };
 
-/* ===== HIỂN THỊ ===== */
+// 🔥 XỬ LÝ CHUỖI SIÊU MẠNH (FIX MỌI LỖI)
+function xuLy(str) {
+    return (str || "")
+        .toLowerCase()
+        .replace(/đ/g, "d")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+// FILTER
+window.locCot = function () {
+
+    let key = xuLy(f_ten.value);
+
+    let f = ds.filter(p => {
+
+        let ten = xuLy(p.ten);
+
+        let matchTen = ten.indexOf(key) !== -1;
+
+        return matchTen &&
+            xuLy(p.namsinh).includes(xuLy(f_namsinh.value)) &&
+            (f_nha.value.trim() === "" || xuLy(p.nha) === xuLy(f_nha.value)) &&
+            xuLy(p.chandoan).includes(xuLy(f_cd.value)) &&
+            xuLy(p.thuoc).includes(xuLy(f_thuoc.value)) &&
+            xuLy(p.bhyt).includes(xuLy(f_bhyt.value));
+    });
+
+    hienThi(f);
+}
+
+// LỌC BHYT
+window.locBHYT = () => hienThi(ds.filter(p => p.bhyt && p.bhyt.trim() !== ""));
+window.locChuaBHYT = () => hienThi(ds.filter(p => !p.bhyt || p.bhyt.trim() === ""));
+window.hienTatCa = () => hienThi(ds);
+
+// HIỂN THỊ
 function hienThi(data) {
     let html = "";
 
@@ -213,9 +241,19 @@ function hienThi(data) {
     let co = data.filter(p => p.bhyt && p.bhyt.trim() !== "").length;
     coBHYT.innerText = co;
     chuaBHYT.innerText = data.length - co;
+
+    let soCD = {};
+    data.forEach(p => {
+        let cd = p.chandoan || "Không rõ";
+        soCD[cd] = (soCD[cd] || 0) + 1;
+    });
+
+    let text = "Thống kê chẩn đoán: ";
+    for (let k in soCD) text += `${k}: ${soCD[k]} | `;
+    tongCD.innerText = text;
 }
 
-/* ===== CLEAR FORM ===== */
+// CLEAR
 function clearForm() {
     ten.value = "";
     namsinh.value = "";
@@ -225,29 +263,32 @@ function clearForm() {
     bhyt.value = "";
 }
 
-/* ===== EXCEL ===== */
+// EXCEL
 window.xuatExcel = function () {
     let table = document.querySelector("table");
     let wb = XLSX.utils.book_new();
     let ws = XLSX.utils.table_to_sheet(table);
-    XLSX.utils.book_append_sheet(wb, ws, "DS");
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sách");
     XLSX.writeFile(wb, "benhnhan.xlsx");
 };
 
+// EXCEL BHYT
 window.xuatExcelBHYT = function () {
     let data = ds.filter(p => p.bhyt && p.bhyt.trim() !== "");
+
     let rows = [["Họ tên","Năm sinh","Nhà","Chẩn đoán","Thuốc","BHYT"]];
-    data.forEach(p => rows.push([p.ten,p.namsinh,p.nha,p.chandoan,p.thuoc,p.bhyt]));
+    data.forEach(p => {
+        rows.push([p.ten,p.namsinh,p.nha,p.chandoan,p.thuoc,p.bhyt]);
+    });
 
     let wb = XLSX.utils.book_new();
     let ws = XLSX.utils.aoa_to_sheet(rows);
     XLSX.utils.book_append_sheet(wb, ws, "BHYT");
+
     XLSX.writeFile(wb, "benhnhan_BHYT.xlsx");
 };
 
-/* ===== START ===== */
 window.onload = loadData;
-
 </script>
 
 </body>
