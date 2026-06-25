@@ -91,6 +91,7 @@ background:#fafafa;
 <table>
 <thead>
 <tr>
+    <th>STT</th>
 <th>Họ tên<br><input id="f_ten" onkeyup="locCot()"></th>
 <th>Năm sinh<br><input id="f_namsinh" onkeyup="locCot()"></th>
     <th>Ngày nhập TT<br><input id="f_ngaynhap" onkeyup="locCot()"></th>
@@ -251,10 +252,13 @@ function doiNgay(date){
 function hienThi(data) {
     let html = "";
 
+    let stt = 1;
+
     data.forEach(p => {
         html += `
         <tr>
-            <td>${p.ten || ""}</td>
+    <td>${stt}</td>
+    <td>${p.ten || ""}</td>
             <td>${p.namsinh || ""}</td>
             <td>${doiNgay(p.ngaynhap)}</td>
             <td>${p.nha || ""}</td>
@@ -266,6 +270,7 @@ function hienThi(data) {
                 <button onclick="xoa('${p.id}')">Xoá</button>
             </td>
         </tr>`;
+        stt++;
     });
 
     dulieu.innerHTML = html;
