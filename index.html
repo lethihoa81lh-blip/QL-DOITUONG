@@ -73,7 +73,19 @@ Có BHYT: <span id="coBHYT">0</span> |
 Chưa có BHYT: <span id="chuaBHYT">0</span>
 </h3>
 
-<h4 id="tongCD"></h4>
+<button onclick="moThongKe()">
+📊 Xem thống kê chẩn đoán
+</button>
+
+<div id="tongCD" style="
+display:none;
+margin-top:10px;
+padding:10px;
+border:1px solid #ddd;
+border-radius:8px;
+background:#fafafa;
+">
+</div>
 
 <div class="container">
 <table>
@@ -222,6 +234,18 @@ function doiNgay(date){
     if(!date) return "";
     let a = date.split("-");
     return a[2] + "/" + a[1] + "/" + a[0];
+}
+    window.moThongKe = function(){
+
+    let box = document.getElementById("tongCD");
+
+    if(box.style.display === "none"){
+        box.style.display = "block";
+    }
+    else{
+        box.style.display = "none";
+    }
+
 }
 // HIỂN THỊ
 function hienThi(data) {
