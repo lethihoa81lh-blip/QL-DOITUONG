@@ -281,9 +281,44 @@ function hienThi(data) {
         soCD[cd] = (soCD[cd] || 0) + 1;
     });
 
-    let text = "Thống kê chẩn đoán: ";
-    for (let k in soCD) text += `${k}: ${soCD[k]} | `;
-    tongCD.innerText = text;
+    let text = `
+<div style="font-weight:bold;font-size:16px;margin-bottom:8px;">
+📊 Thống kê chẩn đoán
+</div>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 70px;
+gap:6px;
+font-size:14px;
+">
+`;
+
+for (let k in soCD) {
+
+    text += `
+    <div style="
+    padding:6px;
+    border-bottom:1px solid #ddd;
+    ">
+    🩺 ${k}
+    </div>
+
+    <div style="
+    padding:6px;
+    border-bottom:1px solid #ddd;
+    text-align:center;
+    font-weight:bold;
+    ">
+    ${soCD[k]}
+    </div>
+    `;
+
+}
+
+text += "</div>";
+
+tongCD.innerHTML = text;
 }
 
 // CLEAR
