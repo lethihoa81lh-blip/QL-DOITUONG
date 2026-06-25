@@ -218,7 +218,11 @@ window.locCot = function () {
 window.locBHYT = () => hienThi(ds.filter(p => p.bhyt && p.bhyt.trim() !== ""));
 window.locChuaBHYT = () => hienThi(ds.filter(p => !p.bhyt || p.bhyt.trim() === ""));
 window.hienTatCa = () => hienThi(ds);
-
+function doiNgay(date){
+    if(!date) return "";
+    let a = date.split("-");
+    return a[2] + "/" + a[1] + "/" + a[0];
+}
 // HIỂN THỊ
 function hienThi(data) {
     let html = "";
@@ -228,7 +232,7 @@ function hienThi(data) {
         <tr>
             <td>${p.ten || ""}</td>
             <td>${p.namsinh || ""}</td>
-            <td>${p.ngaynhap || ""}</td>
+            <td>${doiNgay(p.ngaynhap)}</td>
             <td>${p.nha || ""}</td>
             <td>${p.chandoan || ""}</td>
             <td>${p.thuoc || ""}</td>
