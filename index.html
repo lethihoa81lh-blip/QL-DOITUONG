@@ -15,71 +15,98 @@ input, button {
 }
 
 table {
-    width: max-content;
-    min-width:100%;
+    width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
 }
 
 th, td {
     border: 1px solid #ccc;
-    padding: 2px 3px;
-    font-size: 12px;
+    padding: 1px 2px;
+    font-size: 11px;
     text-align: center;
     white-space: nowrap;
 }
 
-th { background: #f2f2f2; }
+th {
+    background:#f2f2f2;
+}
 
 .container {
     max-height:70vh;
-    overflow-y:auto;
+    overflow:auto;
 }
+
 
 /* STT */
 th:nth-child(1), td:nth-child(1){
-    width:40px;
+    width:35px;
 }
+
 
 /* Họ tên */
 th:nth-child(2), td:nth-child(2){
-    width:90px;
+    width:80px;
     text-align:left;
 }
 
+
 /* Năm sinh */
 th:nth-child(3), td:nth-child(3){
-    width:50px;
+    width:45px;
 }
+
 
 /* Ngày nhập */
 th:nth-child(4), td:nth-child(4){
-    width:80px;
+    width:65px;
 }
+
 
 /* Nhà */
 th:nth-child(5), td:nth-child(5){
-    width:40px;
+    width:35px;
 }
+
 
 /* Chẩn đoán */
 th:nth-child(6), td:nth-child(6){
-    width:100px;
+    width:85px;
 }
+
 
 /* Thuốc */
 th:nth-child(7), td:nth-child(7){
-    width:100px;
+    width:85px;
 }
+
 
 /* BHYT */
 th:nth-child(8), td:nth-child(8){
-    width:80px;
+    width:70px;
 }
+
 
 /* Hành động */
 th:nth-child(9), td:nth-child(9){
-    width:60px;
+    width:55px;
+}
+
+
+/* ô tìm kiếm trong tiêu đề */
+th input{
+    width:95%;
+    padding:1px;
+    margin:1px;
+    font-size:10px;
+}
+
+
+/* nút sửa xoá */
+td button{
+    padding:1px 3px;
+    margin:1px;
+    font-size:10px;
 }
 </style>
 </head>
