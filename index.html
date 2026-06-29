@@ -208,7 +208,15 @@ async function loadData() {
     const snap = await getDocs(collection(db, "benhnhan"));
     ds = [];
     snap.forEach(d => ds.push({ id: d.id, ...d.data() }));
-    hienThi(ds);
+
+// tự sắp xếp Nhà tăng dần
+ds.sort((a,b)=>{
+    let nhaA = parseInt(a.nha) || 999;
+    let nhaB = parseInt(b.nha) || 999;
+    return nhaA - nhaB;
+});
+
+hienThi(ds);
 }
 
 // DATA
