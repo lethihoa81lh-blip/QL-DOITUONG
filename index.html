@@ -170,7 +170,10 @@ background:#fafafa;
 <th>Họ tên<br><input id="f_ten" onkeyup="locCot()"></th>
 <th>Năm sinh<br><input id="f_namsinh" onkeyup="locCot()"></th>
     <th>Ngày nhập TT<br><input id="f_ngaynhap" onkeyup="locCot()"></th>
-<th>Nhà<br><input id="f_nha" onkeyup="locCot()"></th>
+<th onclick="sapXepNha()">
+Nhà ⬍<br>
+<input id="f_nha" onkeyup="locCot()">
+</th>
 <th>Chẩn đoán<br><input id="f_cd" onkeyup="locCot()"></th>
 <th>Thuốc<br><input id="f_thuoc" onkeyup="locCot()"></th>
 <th>BHYT<br><input id="f_bhyt" onkeyup="locCot()"></th>
@@ -322,6 +325,25 @@ function doiNgay(date){
         box.style.display = "none";
     }
 
+}
+    let tangNha = true;
+
+window.sapXepNha = function(){
+
+    ds.sort((a,b)=>{
+
+        let nhaA = parseInt(a.nha) || 999;
+        let nhaB = parseInt(b.nha) || 999;
+
+        return tangNha 
+        ? nhaA - nhaB 
+        : nhaB - nhaA;
+
+    });
+
+    tangNha = !tangNha;
+
+    hienThi(ds);
 }
 // HIỂN THỊ
 function hienThi(data) {
