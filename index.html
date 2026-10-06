@@ -40,63 +40,16 @@ th {
     overflow:auto;
 }
 
+th:nth-child(1), td:nth-child(1){ width:25px; }
+th:nth-child(2), td:nth-child(2){ width:90px; text-align:left; }
+th:nth-child(3), td:nth-child(3){ width:40px; }
+th:nth-child(4), td:nth-child(4){ width:50px; }
+th:nth-child(5), td:nth-child(5){ width:30px; }
+th:nth-child(6), td:nth-child(6){ width:75px; }
+th:nth-child(7), td:nth-child(7){ width:80px; }
+th:nth-child(8), td:nth-child(8){ width:70px; }
+th:nth-child(9), td:nth-child(9){ width:35px; }
 
-/* STT */
-th:nth-child(1), td:nth-child(1){
-    width:25px;
-}
-
-
-/* Họ tên */
-th:nth-child(2), td:nth-child(2){
-    width:90px;
-    text-align:left;
-}
-
-
-/* Năm sinh */
-th:nth-child(3), td:nth-child(3){
-    width:40px;
-}
-
-
-/* Ngày nhập */
-th:nth-child(4), td:nth-child(4){
-    width:50px;
-}
-
-
-/* Nhà */
-th:nth-child(5), td:nth-child(5){
-    width:30px;
-}
-
-
-/* Chẩn đoán */
-th:nth-child(6), td:nth-child(6){
-    width:75px;
-}
-
-
-/* Thuốc */
-th:nth-child(7), td:nth-child(7){
-    width:80px;
-}
-
-
-/* BHYT */
-th:nth-child(8), td:nth-child(8){
-    width:70px;
-}
-
-
-/* Hành động */
-th:nth-child(9), td:nth-child(9){
-    width:35px;
-}
-
-
-/* ô tìm kiếm trong tiêu đề */
 th input{
     width:95%;
     padding:1px;
@@ -104,12 +57,34 @@ th input{
     font-size:10px;
 }
 
-
-/* nút sửa xoá */
 td button{
     padding:1px 3px;
     margin:1px;
     font-size:10px;
+}
+
+/* Thống kê chẩn đoán */
+.cd-box{
+    padding:8px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    text-align:center;
+    cursor:pointer;
+    background:#fff;
+}
+.cd-box:hover{ background:#eef6ff; }
+
+.nhap-excel{
+    display:inline-block;
+    margin:5px;
+    padding:4px 8px;
+    border:1px dashed #999;
+    border-radius:6px;
+    font-size:13px;
+}
+.nhap-excel input{
+    margin:0;
+    padding:0;
 }
 </style>
 </head>
@@ -125,9 +100,9 @@ td button{
 
 <input id="ten" placeholder="Họ tên">
 <input id="namsinh" placeholder="Năm sinh">
-    <input id="ngaynhap" type="date">
+<input id="ngaynhap" type="date">
 <input id="nha" placeholder="Nhà">
-<input id="chandoan" placeholder="Chẩn đoán">
+<input id="chandoan" placeholder="Chẩn đoán (nhiều bệnh: HA, Tâm thần)">
 <input id="thuoc" placeholder="Thuốc">
 <input id="bhyt" placeholder="Số thẻ BHYT">
 
@@ -141,6 +116,15 @@ td button{
 <button onclick="locChuaBHYT()">Chưa có BHYT</button>
 <button onclick="hienTatCa()">Hiện tất cả</button>
 <button onclick="xuatExcelBHYT()">Xuất Excel BHYT</button>
+
+<br>
+
+<!-- NHẬP EXCEL -->
+<span class="nhap-excel">
+    📥 Nhập từ Excel (admin):
+    <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" onchange="nhapExcel(event)">
+</span>
+<button onclick="taiFileMau()">⬇ Tải file Excel mẫu</button>
 
 <h3>
 Tổng: <span id="tongBN">0</span> | 
@@ -187,11 +171,11 @@ Nhà ⬍<br>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc } 
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, writeBatch } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSy...",   // <-- giữ nguyên apiKey thật của bạn
   authDomain: "ql-benhnhan.firebaseapp.com",
   projectId: "ql-benhnhan",
 };
@@ -209,14 +193,13 @@ async function loadData() {
     ds = [];
     snap.forEach(d => ds.push({ id: d.id, ...d.data() }));
 
-// tự sắp xếp Nhà tăng dần
-ds.sort((a,b)=>{
-    let nhaA = parseInt(a.nha) || 999;
-    let nhaB = parseInt(b.nha) || 999;
-    return nhaA - nhaB;
-});
+    ds.sort((a,b)=>{
+        let nhaA = parseInt(a.nha) || 999;
+        let nhaB = parseInt(b.nha) || 999;
+        return nhaA - nhaB;
+    });
 
-hienThi(ds);
+    hienThi(ds);
 }
 
 // DATA
@@ -279,9 +262,10 @@ window.capNhat = async function () {
     loadData();
 };
 
-// 🔥 XỬ LÝ CHUỖI SIÊU MẠNH (FIX MỌI LỖI)
+// XỬ LÝ CHUỖI (bỏ dấu, chữ thường)
 function xuLy(str) {
     return (str || "")
+        .toString()
         .toLowerCase()
         .replace(/đ/g, "d")
         .normalize("NFD")
@@ -289,6 +273,17 @@ function xuLy(str) {
         .replace(/[^a-z0-9 ]/g, "")
         .replace(/\s+/g, " ")
         .trim();
+}
+
+// TÁCH NHIỀU BỆNH TRONG 1 Ô CHẨN ĐOÁN
+// Phân cách bằng: dấu phẩy, chấm phẩy, gạch chéo /, dấu +, xuống dòng, hoặc chữ "và"
+function tachBenh(str) {
+    return (str || "")
+        .split(/[,;\/+\n]|\s+và\s+/i)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => ({ key: xuLy(s).replace(/ /g, ""), name: s }))
+        .filter(b => b.key !== "");
 }
 
 // FILTER
@@ -299,7 +294,6 @@ window.locCot = function () {
     let f = ds.filter(p => {
 
         let ten = xuLy(p.ten);
-
         let matchTen = ten.indexOf(key) !== -1;
 
         return matchTen &&
@@ -318,53 +312,108 @@ window.locCot = function () {
 window.locBHYT = () => hienThi(ds.filter(p => p.bhyt && p.bhyt.trim() !== ""));
 window.locChuaBHYT = () => hienThi(ds.filter(p => !p.bhyt || p.bhyt.trim() === ""));
 window.hienTatCa = () => hienThi(ds);
+
+// BẤM VÀO Ô THỐNG KÊ -> LỌC DANH SÁCH THEO BỆNH ĐÓ
+window.locBenh = function (key) {
+    let f = ds.filter(p => {
+        let list = tachBenh(p.chandoan);
+        if (key === "khongro") return list.length === 0;
+        return list.some(b => b.key === key);
+    });
+    hienThi(f, true); // giữ nguyên bảng thống kê
+};
+
 function doiNgay(date){
     if(!date) return "";
     let a = date.split("-");
+    if (a.length < 3) return date;
     return a[2] + "/" + a[1] + "/" + a[0];
 }
-    window.moThongKe = function(){
 
+window.moThongKe = function(){
     let box = document.getElementById("tongCD");
-
-    if(box.style.display === "none"){
-        box.style.display = "block";
-    }
-    else{
-        box.style.display = "none";
-    }
-
+    box.style.display = (box.style.display === "none") ? "block" : "none";
 }
-    let tangNha = true;
+
+let tangNha = true;
 
 window.sapXepNha = function(){
-
     ds.sort((a,b)=>{
-
         let nhaA = parseInt(a.nha) || 999;
         let nhaB = parseInt(b.nha) || 999;
-
-        return tangNha 
-        ? nhaA - nhaB 
-        : nhaB - nhaA;
-
+        return tangNha ? nhaA - nhaB : nhaB - nhaA;
     });
-
     tangNha = !tangNha;
-
     hienThi(ds);
 }
-// HIỂN THỊ
-function hienThi(data) {
-    let html = "";
 
+// THỐNG KÊ CHẨN ĐOÁN (mỗi bệnh đếm riêng, 1 người mắc nhiều bệnh được đếm ở từng bệnh)
+function thongKeChanDoan(data) {
+    let soCD = {};      // key -> {name, count}
+    let nhieuBenh = 0;  // số người mắc từ 2 bệnh trở lên
+    let khongRo = 0;
+
+    data.forEach(p => {
+        let list = tachBenh(p.chandoan);
+
+        if (list.length === 0) { khongRo++; return; }
+
+        // mỗi người chỉ đếm 1 lần cho mỗi bệnh (tránh ghi trùng "HA, HA")
+        let daDem = new Set();
+        list.forEach(b => {
+            if (daDem.has(b.key)) return;
+            daDem.add(b.key);
+            if (!soCD[b.key]) soCD[b.key] = { name: b.name, count: 0 };
+            soCD[b.key].count++;
+        });
+
+        if (daDem.size >= 2) nhieuBenh++;
+    });
+
+    let arr = Object.keys(soCD)
+        .map(k => ({ key: k, name: soCD[k].name, count: soCD[k].count }))
+        .sort((a, b) => b.count - a.count);
+
+    let html = `
+    <div style="font-weight:bold;font-size:16px;margin-bottom:4px;">
+        📊 Thống kê chẩn đoán
+    </div>
+    <div style="font-size:13px;margin-bottom:8px;color:#555;">
+        Mỗi bệnh đếm riêng — người mắc nhiều bệnh được tính vào từng bệnh.
+        Người mắc từ 2 bệnh trở lên: <b>${nhieuBenh}</b>.
+        Bấm vào ô bệnh để lọc danh sách.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:14px;">
+    `;
+
+    arr.forEach(b => {
+        html += `
+        <div class="cd-box" data-key="${b.key}" onclick="locBenh(this.dataset.key)">
+            <b>${b.name}</b><br>${b.count}
+        </div>`;
+    });
+
+    if (khongRo > 0) {
+        html += `
+        <div class="cd-box" data-key="khongro" onclick="locBenh(this.dataset.key)">
+            <b>Không rõ</b><br>${khongRo}
+        </div>`;
+    }
+
+    html += "</div>";
+    tongCD.innerHTML = html;
+}
+
+// HIỂN THỊ
+function hienThi(data, giuThongKe) {
+    let html = "";
     let stt = 1;
 
     data.forEach(p => {
         html += `
         <tr>
-    <td>${stt}</td>
-    <td>${p.ten || ""}</td>
+            <td>${stt}</td>
+            <td>${p.ten || ""}</td>
             <td>${p.namsinh || ""}</td>
             <td>${doiNgay(p.ngaynhap)}</td>
             <td>${p.nha || ""}</td>
@@ -386,49 +435,9 @@ function hienThi(data) {
     coBHYT.innerText = co;
     chuaBHYT.innerText = data.length - co;
 
-    let soCD = {};
-    data.forEach(p => {
-        let cd = p.chandoan || "Không rõ";
-        soCD[cd] = (soCD[cd] || 0) + 1;
-    });
-
- let text = `
-<div style="
-font-weight:bold;
-font-size:16px;
-margin-bottom:8px;">
-📊 Thống kê chẩn đoán
-</div>
-
-<div style="
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:8px;
-font-size:14px;
-">
-`;
-
-for (let k in soCD) {
-
-    text += `
-    <div style="
-    padding:8px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    text-align:center;">
-    
-    <b>${k}</b><br>
-    ${soCD[k]}
-
-    </div>
-    `;
-
+    if (!giuThongKe) thongKeChanDoan(data);
 }
 
-text += "</div>";
-
-tongCD.innerHTML = text;
-}
 // CLEAR
 function clearForm() {
     ten.value = "";
@@ -439,6 +448,154 @@ function clearForm() {
     thuoc.value = "";
     bhyt.value = "";
 }
+
+// ================= NHẬP EXCEL =================
+
+// Chuẩn hoá ngày về dạng yyyy-mm-dd (ô <input type="date">)
+function chuanNgay(v) {
+    if (v === "" || v === null || v === undefined) return "";
+    let pad = n => String(n).padStart(2, "0");
+
+    // Ô ngày của Excel (số serial)
+    if (typeof v === "number") {
+        let d = XLSX.SSF.parse_date_code(v);
+        if (d && d.y > 1900) return d.y + "-" + pad(d.m) + "-" + pad(d.d);
+        return "";
+    }
+
+    let s = String(v).trim();
+
+    // dd/mm/yyyy hoặc dd-mm-yyyy hoặc dd.mm.yyyy
+    let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    if (m) return m[3] + "-" + pad(m[2]) + "-" + pad(m[1]);
+
+    // yyyy-mm-dd
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return m[1] + "-" + pad(m[2]) + "-" + pad(m[3]);
+
+    return "";
+}
+
+// Nhận diện cột theo tiêu đề
+function nhanDienCot(row) {
+    let map = { ten: -1, namsinh: -1, ngaynhap: -1, nha: -1, chandoan: -1, thuoc: -1, bhyt: -1 };
+    row.forEach((cell, j) => {
+        let k = xuLy(cell).replace(/ /g, "");
+        if (!k) return;
+        if (k === "hoten" || k === "ten" || k === "hovaten") map.ten = j;
+        else if (k === "namsinh" || k === "ns") map.namsinh = j;
+        else if (k.startsWith("ngaynhap")) map.ngaynhap = j;
+        else if (k === "nha" || k === "phong") map.nha = j;
+        else if (k.startsWith("chandoan") || k === "benh") map.chandoan = j;
+        else if (k === "thuoc") map.thuoc = j;
+        else if (k.includes("bhyt")) map.bhyt = j;
+    });
+    return map;
+}
+
+window.nhapExcel = async function (ev) {
+    let input = ev.target;
+    let file = input.files[0];
+    if (!file) return;
+
+    try {
+        if (!isAdmin) { alert("Không có quyền! Hãy đăng nhập admin trước."); return; }
+
+        let buf = await file.arrayBuffer();
+        let wb = XLSX.read(buf, { type: "array" });
+        let rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
+
+        if (rows.length === 0) { alert("File Excel trống."); return; }
+
+        // Tìm dòng tiêu đề trong 5 dòng đầu
+        let map = null, batDau = 0;
+        for (let i = 0; i < Math.min(5, rows.length); i++) {
+            let m = nhanDienCot(rows[i]);
+            if (m.ten >= 0) { map = m; batDau = i + 1; break; }
+        }
+        // Không có tiêu đề -> mặc định thứ tự cột:
+        // Họ tên | Năm sinh | Ngày nhập | Nhà | Chẩn đoán | Thuốc | BHYT
+        if (!map) {
+            map = { ten: 0, namsinh: 1, ngaynhap: 2, nha: 3, chandoan: 4, thuoc: 5, bhyt: 6 };
+            batDau = 0;
+        }
+
+        let lay = (r, k) => (map[k] >= 0 && r[map[k]] !== undefined) ? r[map[k]] : "";
+        let chuoi = v => String(v).trim();
+
+        // Tập khoá để bỏ qua người đã có (trùng họ tên + năm sinh)
+        let khoa = p => xuLy(p.ten).replace(/ /g, "") + "|" + chuoi(p.namsinh || "");
+        let daCo = new Set(ds.map(khoa));
+
+        let moi = [], trung = 0, thieuTen = 0;
+
+        for (let i = batDau; i < rows.length; i++) {
+            let r = rows[i];
+            let tenNguoi = chuoi(lay(r, "ten"));
+            if (!tenNguoi) { if (r.some(c => chuoi(c) !== "")) thieuTen++; continue; }
+
+            let p = {
+                ten: tenNguoi,
+                namsinh: chuoi(lay(r, "namsinh")),
+                ngaynhap: chuanNgay(lay(r, "ngaynhap")),
+                nha: chuoi(lay(r, "nha")),
+                chandoan: chuoi(lay(r, "chandoan")),
+                thuoc: chuoi(lay(r, "thuoc")),
+                bhyt: chuoi(lay(r, "bhyt"))
+            };
+
+            let k = khoa(p);
+            if (daCo.has(k)) { trung++; continue; }
+            daCo.add(k);
+            moi.push(p);
+        }
+
+        if (moi.length === 0) {
+            alert("Không có đối tượng mới để nhập." + (trung ? "\nBỏ qua " + trung + " người đã có (trùng họ tên + năm sinh)." : ""));
+            return;
+        }
+
+        let ok = confirm(
+            "Sẽ nhập " + moi.length + " đối tượng mới." +
+            (trung ? "\nBỏ qua " + trung + " người đã có trong hệ thống." : "") +
+            (thieuTen ? "\nBỏ qua " + thieuTen + " dòng thiếu họ tên." : "") +
+            "\n\nTiếp tục?"
+        );
+        if (!ok) return;
+
+        // Ghi theo lô (Firestore tối đa 500 thao tác / lô)
+        for (let i = 0; i < moi.length; i += 400) {
+            let batch = writeBatch(db);
+            moi.slice(i, i + 400).forEach(p => {
+                batch.set(doc(collection(db, "benhnhan")), p);
+            });
+            await batch.commit();
+        }
+
+        alert("Đã nhập thành công " + moi.length + " đối tượng.");
+        await loadData();
+
+    } catch (err) {
+        console.error(err);
+        alert("Lỗi khi nhập Excel: " + err.message);
+    } finally {
+        input.value = ""; // cho phép chọn lại cùng file
+    }
+};
+
+// File Excel mẫu
+window.taiFileMau = function () {
+    let rows = [
+        ["Họ tên", "Năm sinh", "Ngày nhập TT", "Nhà", "Chẩn đoán", "Thuốc", "BHYT"],
+        ["Nguyễn Văn A", "1960", "15/03/2020", "1", "HA, Tâm thần", "Amlodipin; Risperidon", "DN4123456789"],
+        ["Trần Thị B", "1975", "01/07/2021", "2", "Đái tháo đường", "Metformin", ""]
+    ];
+    let wb = XLSX.utils.book_new();
+    let ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{wch:20},{wch:10},{wch:14},{wch:6},{wch:25},{wch:25},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, ws, "Mau nhap");
+    XLSX.writeFile(wb, "mau_nhap_doi_tuong.xlsx");
+};
 
 // EXCEL
 window.xuatExcel = function () {
